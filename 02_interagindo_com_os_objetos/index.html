@@ -1,11 +1,14 @@
 <html>
     <head>
+
     </head>
     <body>
-        <div>HELLO THREE!</div>
-        <div id="target_div" style="width: 500px; height: 500px;"></div>
+        <div>Hello world</div>
+        <div id="target_div" style="height:500px"></div>
         <script src="three.js"></script>
+        <script src="normalizedMousePosition.js"></script>
         <script>
+
             const targetDiv = document.getElementById("target_div");
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75,
@@ -13,17 +16,31 @@
             const renderer = new THREE.WebGLRenderer();
             renderer.setSize(targetDiv.clientWidth, targetDiv.clientHeight);
             targetDiv.appendChild(renderer.domElement);
-            
             const geometry = new THREE.BoxGeometry();
-            const material = new THREE.MeshBasicMaterial({color:0x00ff00});
+            const material = new THREE.MeshBasicMaterial({color:0xff0000});
             const cube = new THREE.Mesh(geometry, material);
+            cube.name = "MyCube";
             scene.add(cube);
             camera.position.z = 5;
+            ///NOVO - O Raycaster
+            const raycaster = new THREE.Raycaster();
+            ///NOVO - Evento de click
+
+            targetDiv.addEventListener('click',(event)=>{
+                const pickPosition = mousePositionAsNormalizedCoordinates(event, 
+                    renderer)
+                raycaster.setFromCamera(pickPosition, camera);
+                const interceptedObjects = raycaster.intersectObjects(scene.children, 
+                    true);
+                if(interceptedObjects.length > 0 ){
+                    alert(interceptedObjects[0].object.uuid);
+                }
+            });
             function animate(){
                 requestAnimationFrame(animate);
                 renderer.render(scene, camera);
             }
-            animate();
+            animate(); 
         </script>
     </body>
 </html>
