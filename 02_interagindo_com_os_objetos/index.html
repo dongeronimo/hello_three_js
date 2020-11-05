@@ -1,6 +1,5 @@
 <html>
     <head>
-
     </head>
     <body>
         <div>Hello world</div>
@@ -8,7 +7,6 @@
         <script src="three.js"></script>
         <script src="normalizedMousePosition.js"></script>
         <script>
-
             const targetDiv = document.getElementById("target_div");
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75,
@@ -25,7 +23,6 @@
             ///NOVO - O Raycaster
             const raycaster = new THREE.Raycaster();
             ///NOVO - Evento de click
-
             targetDiv.addEventListener('click',(event)=>{
                 const pickPosition = mousePositionAsNormalizedCoordinates(event, 
                     renderer)
