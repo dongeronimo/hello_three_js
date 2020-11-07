@@ -1,0 +1,75 @@
+<html>
+    <head>
+    </head>
+    <body>
+        <div>Navigation</div>
+        <div id="target_div" style="height:500px"></div>
+        <script src="three.js"></script>
+        <script src="normalizedMousePosition.js"></script>
+        <script src="controllers/OrbitControls.js"></script>
+        <script>
+            //NOVO: Encapsulei a criação de cubos nesta função.
+            function createCube(x,y,z, color, name){
+                const geometry = new THREE.BoxGeometry();
+                const material = new THREE.MeshBasicMaterial({color:color});
+                const cube = new THREE.Mesh(geometry, material);
+                cube.position.x = x;
+                cube.position.y = y;
+                cube.position.z = z;
+                cube.name = name
+                return cube; 
+            }
+            //NOVO:Criação de um plano
+            function createPlane(x,y,z, width, height, color, name){
+                const geometry = new THREE.PlaneGeometry(width, height)
+                const material = new THREE.MeshBasicMaterial({color:color, side: THREE.DoubleSide});
+                const plane = new THREE.Mesh(geometry, material);
+                plane.position.x = x;
+                plane.position.y = y;
+                plane.position.z = z;
+                plane.width = width;
+                plane.height = height
+                plane.name = name
+                plane.rotation.x = 3.14 / 2.0;
+                return plane;
+            }
+            const targetDiv = document.getElementById("target_div");
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75,
+                targetDiv.clientWidth / targetDiv.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer();
+            renderer.setSize(targetDiv.clientWidth, targetDiv.clientHeight);
+            targetDiv.appendChild(renderer.domElement);
+            //Novo: Objetos sendo adicionados à cena.
+            scene.add(createCube(1,0,0, 0xff0000, "vermelho"));
+            scene.add(createCube(3,0,0, 0x00ff00, "verde"));
+            scene.add(createCube(5,0,0, 0x0000ff, "azul"));
+            scene.add(createCube(1,0,-2, 0xffff00, "amarelo"));
+            scene.add(createCube(1,0,-4, 0xff00ff, "roxo"));
+            scene.add(createPlane(0,-0.5,0, 20, 20, 0x888888, "plano"))
+            camera.position.set(0,2,3);
+            //NOVO - O orbit controlller
+            const control = new THREE.OrbitControls(camera, renderer.domElement);
+            //Depois de qualquer alteração manual da camera
+            control.update();
+            const raycaster = new THREE.Raycaster();
+            targetDiv.addEventListener('click',(event)=>{
+                const pickPosition = mousePositionAsNormalizedCoordinates(event, 
+                    renderer)
+                raycaster.setFromCamera(pickPosition, camera);
+                const interceptedObjects = raycaster.intersectObjects(scene.children, 
+                    true);
+                if(interceptedObjects.length > 0 ){
+                    control.target = interceptedObjects[0].object.position;
+                    control.update(); 
+                }
+            });
+            function animate(){
+                requestAnimationFrame(animate);
+                control.update();//Aqui o controller atualiza a cãmera.
+                renderer.render(scene, camera);
+            }
+            animate(); 
+        </script>
+    </body>
+</html>
