@@ -1,24 +1,16 @@
 <html>
-    <head>
-        <style>
-            .div3d{
-                min-height: 500px;
-                background-color: antiquewhite;
-                width: 100%;
-            }
-        </style>
-    </head>
+    <head title="Carregando FBX"></head>
     <body>
-        <div>
-            <button>Carro</button>
-        </div>
-        <div class="div3d"></div>
-        <script src="three.js"></script>
-        <script src="normalizedMousePosition.js"></script>
-        <script src="FBXLoader.js"></script>
-        <script>
-            //TODO: Mover essas funções pra um arquivo de utils
-            function createCube(x,y,z, color, name){
+        <div id="c" style="height:500px"></div>
+    </body>
+    <script type="module">
+        //NOVO: Importando a three como módulo.
+        import * as THREE from "./build/three.module.js";
+        import {OrbitControls} from "./jsm/controls/OrbitControls.js"
+        import { FBXLoader } from './jsm/loaders/FBXLoader.js';
+
+
+        function createCube(x,y,z, color, name){
                 const geometry = new THREE.BoxGeometry();
                 const material = new THREE.MeshBasicMaterial({color:color});
                 const cube = new THREE.Mesh(geometry, material);
@@ -28,6 +20,7 @@
                 cube.name = name
                 return cube; 
             }
+            //NOVO:Criação de um plano
             function createPlane(x,y,z, width, height, color, name){
                 const geometry = new THREE.PlaneGeometry(width, height)
                 const material = new THREE.MeshBasicMaterial({color:color, side: THREE.DoubleSide});
@@ -41,54 +34,48 @@
                 plane.rotation.x = 3.14 / 2.0;
                 return plane;
             }
-            function setupSceneCameraAndRenderer(targetDiv){
-                const scene = new THREE.Scene();
-                const camera = new THREE.PerspectiveCamera(75,targetDiv.clientWidth / targetDiv.clientHeight, 0.1, 1000);
-                const renderer = new THREE.WebGLRenderer();
-                renderer.setSize(targetDiv.clientWidth, targetDiv.clientHeight);
-                targetDiv.appendChild(renderer.domElement);
-                return {scene, camera, renderer}
-            }
-        </script>
-        <script>
-            const {scene, camera, renderer} = setupSceneCameraAndRenderer(document.getElementsByClassName("div3d")[0]);
-            //Novo redi
 
-            window.addEventListener('resize', ()=>{
-                const myDiv = document.getElementsByClassName("div3d")[0];
-                camera.aspect = myDiv.clientWidth / myDiv.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(myDiv.clientWidth, myDiv.clientHeight);
-            })
-            scene.add(createCube(1,0,0, 0xff0000, "vermelho"));
-            scene.add(createCube(3,0,0, 0x00ff00, "verde"));
-            scene.add(createCube(5,0,0, 0x0000ff, "azul"));
-            scene.add(createCube(1,0,-2, 0xffff00, "amarelo"));
-            scene.add(createCube(1,0,-4, 0xff00ff, "roxo"));
-            scene.add(createPlane(0,-0.5,0, 20, 20, 0x888888, "plano"))
-            camera.position.set(0,2,3);
-            //NOVO - O orbit controlller
-            // const control = new THREE.OrbitControls(camera, renderer.domElement);
-            // //Depois de qualquer alteração manual da camera
-            // control.update();
-            // const raycaster = new THREE.Raycaster();
-            // targetDiv.addEventListener('click',(event)=>{
-            //     const pickPosition = mousePositionAsNormalizedCoordinates(event, 
-            //         renderer)
-            //     raycaster.setFromCamera(pickPosition, camera);
-            //     const interceptedObjects = raycaster.intersectObjects(scene.children, 
-            //         true);
-            //     if(interceptedObjects.length > 0 ){
-            //         control.target = interceptedObjects[0].object.position;
-            //         control.update(); 
-            //     }
-            // });
+        function createRendererCameraScene(canvas){
+            const renderer = new THREE.WebGLRenderer();
+            const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth/canvas.clientHeight, 0.1, 1000);
+            const scene = new THREE.Scene();
+            //NOVO: Determina a cor de fundo da cena
+            scene.background = new THREE.Color(0xa0a0a0);
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            canvas.appendChild(renderer.domElement);
+            return {renderer, camera, scene};
+        }
+        function main() {
+            const canvas = document.querySelector('#c');
+            const {renderer, camera, scene} = createRendererCameraScene(canvas);
+            //NOVO: Carga do objeto
+            const loader = new FBXLoader();
+            loader.load('./assets/Capoeira.fbx', 
+            (object)=>{//Após a carga, o objeto carregado estará aqui.
+                //TODO: Carregar as animações.
+                scene.add(object);
+            }, 
+            (progress)=>{ //Lida com o progresso da carga
+                const totalToLoad = progress.total;
+                const loaded = progress.loaded;
+                const loadPercentage = loaded / totalToLoad;
+                console.log("TODO: Mostrar numa barra de progressos "+loadPercentage);
+            }, 
+            (error)=>{
+                console.log(error)
+            });
+            const controls = new OrbitControls(camera, renderer.domElement);
+            controls.target.set(0,100,0);
+            controls.update();
+
             function animate(){
                 requestAnimationFrame(animate);
-                //control.update();//Aqui o controller atualiza a cãmera.
+                //TODO: Avançar animação
+                controls.update()
                 renderer.render(scene, camera);
             }
-            animate(); 
-        </script>
-    </body>
+            animate();
+        }
+        main();
+    </script>
 </html>
