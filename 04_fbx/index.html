@@ -37,7 +37,7 @@
 
         function createRendererCameraScene(canvas){
             const renderer = new THREE.WebGLRenderer();
-            const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth/canvas.clientHeight, 0.1, 1000);
+            const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth/canvas.clientHeight, 1, 10000);
             const scene = new THREE.Scene();
             //NOVO: Determina a cor de fundo da cena
             scene.background = new THREE.Color(0xa0a0a0);
@@ -48,12 +48,31 @@
         function main() {
             const canvas = document.querySelector('#c');
             const {renderer, camera, scene} = createRendererCameraScene(canvas);
+            const controls = new OrbitControls(camera, renderer.domElement);
+            camera.position.set(0,20, 100);
+            controls.update();
             //NOVO: Carga do objeto
             const loader = new FBXLoader();
             loader.load('./assets/Capoeira.fbx', 
             (object)=>{//Após a carga, o objeto carregado estará aqui.
                 //TODO: Carregar as animações.
                 scene.add(object);
+                
+                
+                const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+				hemiLight.position.set( 0, 200, 0 );
+                scene.add( hemiLight );
+
+                // // ground
+				// const mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
+				// mesh.rotation.x = - Math.PI / 2;
+				// mesh.receiveShadow = true;
+				// scene.add( mesh );
+
+				// const grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
+				// grid.material.opacity = 0.2;
+				// grid.material.transparent = true;
+				// scene.add( grid );
             }, 
             (progress)=>{ //Lida com o progresso da carga
                 const totalToLoad = progress.total;
@@ -64,8 +83,8 @@
             (error)=>{
                 console.log(error)
             });
-            const controls = new OrbitControls(camera, renderer.domElement);
-            controls.target.set(0,100,0);
+            
+            camera.position.set(0,150,300);
             controls.update();
 
             function animate(){
