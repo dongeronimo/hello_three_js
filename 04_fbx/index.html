@@ -54,34 +54,22 @@
             //NOVO: Carga do objeto
             const loader = new FBXLoader();
             loader.load('./assets/Capoeira.fbx', 
-            (object)=>{//Após a carga, o objeto carregado estará aqui.
-                //TODO: Carregar as animações.
-                scene.add(object);
-                
-                
-                const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
-				hemiLight.position.set( 0, 200, 0 );
-                scene.add( hemiLight );
+                (object)=>{//Após a carga, o objeto carregado estará aqui.
+                    //TODO: Carregar as animações.
+                    scene.add(object);
+                    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+			    	hemiLight.position.set( -500, 200, 0 );
+                    scene.add( hemiLight );
 
-                // // ground
-				// const mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
-				// mesh.rotation.x = - Math.PI / 2;
-				// mesh.receiveShadow = true;
-				// scene.add( mesh );
-
-				// const grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
-				// grid.material.opacity = 0.2;
-				// grid.material.transparent = true;
-				// scene.add( grid );
-            }, 
-            (progress)=>{ //Lida com o progresso da carga
-                const totalToLoad = progress.total;
-                const loaded = progress.loaded;
-                const loadPercentage = loaded / totalToLoad;
-                console.log("TODO: Mostrar numa barra de progressos "+loadPercentage);
-            }, 
-            (error)=>{
-                console.log(error)
+                }, 
+                (progress)=>{ //Lida com o progresso da carga
+                    const totalToLoad = progress.total;
+                    const loaded = progress.loaded;
+                    const loadPercentage = loaded / totalToLoad;
+                    console.log("TODO: Mostrar numa barra de progressos "+loadPercentage);
+                }, 
+                (error)=>{
+                    console.log(error)
             });
             
             camera.position.set(0,150,300);

@@ -50,7 +50,7 @@ Se tudo deu certo vai mostrar a tela preta e se conferir no debugger todos os ob
 8) Primeiro precisamos de um arquivo para abrir. Baixei o capoeira.fbx do www.mixamo.com e pus na pasta assets do 04_fbx.
 
 9) Crio um loader e uso a função load dele. A carga é asincrona e o resultado vem em um dos callbacks. O primeiro parâmetro
-do callback é o arquivo a ser carregado, o 2o parametro é o callback do final da carga e esse callback recebe o objeto carregado,
+é o arquivo a ser carregado, o 2o parametro é o callback do final da carga e esse callback recebe o objeto carregado,
 o 3o parâmetro é o progresso da carga e recebe um objeto de progresso e o 4o parâmetro é o callback de erro e recebe um objeto de
 erro.
 
@@ -63,13 +63,16 @@ de arquitetura não teria esse problema, é uma questão específica do boneco q
 luzes.
 
 -----------ILUMINAÇÂO-----------------------
-12) A equação fundamental da renderização é a modelagem matemática do processo de renderização. Ela é um somatório de efeitos de cada
-fonte de luz, do espaço entre a fonte de luz e as superficies, dos efeitos de reflexão, refração, absorção e emissão das superficies, 
-dos efeitos no espaço entre a superficie que reflete a luz e o observador e dos efeitos no observador. Até o momento não foi preciso 
-nos preocuparmos com estes conceitos mas agora, como precisamos de iluminação, precisamos nos preocupar.
+12) A equação fundamental da renderização é a modelagem matemática do processo de renderização. Ela é um somatório de efeitos 
+de cadafonte de luz, do espaço entre a fonte de luz e as superficies, dos efeitos de reflexão, refração, absorção e emissão 
+das superficies, dos efeitos no espaço entre a superficie que reflete a luz e o observador e dos efeitos no observador. 
+Até o momento não foi preciso nos preocuparmos com estes conceitos mas agora, como precisamos de iluminação, 
+precisamos nos preocupar.
 
-13) O material do boneco exige luz, como há zero luzes na cena ele retorna todos os seus fragmentos (=pixels na tela nesta situação) como
-pretos. A iluminação costuma ser modelada nos materiais como algoritimos que modelam a reflexão e absorção da luz na superficie do modelo 
+13) O material do boneco exige luz, como há zero luzes na cena ele retorna todos os seus fragmentos (=pixels na tela nesta 
+situação) como
+pretos. A iluminação costuma ser modelada nos materiais como algoritimos que modelam a reflexão e 
+absorção da luz na superficie do modelo 
 para então determinar a cor a ser gerada. Então vamos criar a luz.
 
 14) Vou criar o HemisphereLight. É uma fonte de luz bem simples, diretamente acima da cena, com a cor indo da cor do céu (1o parametro do 
