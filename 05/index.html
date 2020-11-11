@@ -1,0 +1,188 @@
+<html>
+    <head title="Carregando FBX">
+        <style>
+            svg {width: 100px;border-radius: 50%;background:yellowgreen; transform: rotate(-90deg);}
+            circle {fill: none;stroke-width: 32;r: 16;cx: 16;cy: 16;}
+            circle.first {stroke: deeppink;}
+            circle.second {stroke: #fb3;}
+            circle.third {stroke: black;}
+        </style>
+    </head>
+    <body>
+        <div id="c" style="height:500px"></div>
+        <div id="panel" style="position: absolute; width: 300px; height: 100px; visibility: hidden;">
+            <span>GRAFICO DA D3 VIRIA AQUI</span>
+            <svg viewBox="0 0 32 32">
+                <circle class='first' stroke-dasharray="75 100"></circle>
+                <circle class='second' stroke-dasharray="50 100"></circle>
+                <circle class='third' stroke-dasharray="24 100"></circle>
+              </svg>
+        </div>
+    </body>
+    <script type="module">
+        //NOVO: Importando a three como módulo.
+        import * as THREE from "./build/three.module.js";
+        import {OrbitControls} from "./jsm/controls/OrbitControls.js"
+        import { FBXLoader } from './jsm/loaders/FBXLoader.js';
+        function mousePositionAsNormalizedCoordinates(event, renderer){
+            const canvas = renderer.domElement;
+            const rect = canvas.getBoundingClientRect();
+            const pos = {
+                x: (event.clientX - rect.left) * canvas.width  / rect.width,
+                y: (event.clientY - rect.top ) * canvas.height / rect.height,
+            };
+            const pickPosition = new THREE.Vector2(0,0);
+            pickPosition.x = (event.x / canvas.width ) *  2 - 1;
+            pickPosition.y = (event.y / canvas.height) * -2 + 1;  // note we flip Y
+            return pickPosition;
+        }
+
+        function createCube(x,y,z, color, name){
+                const geometry = new THREE.BoxGeometry();
+                const material = new THREE.MeshBasicMaterial({color:color});
+                const cube = new THREE.Mesh(geometry, material);
+                cube.position.x = x;
+                cube.position.y = y;
+                cube.position.z = z;
+                cube.name = name
+                return cube; 
+            }
+            //NOVO:Criação de um plano
+            function createPlane(x,y,z, width, height, color, name){
+                const geometry = new THREE.PlaneGeometry(width, height)
+                const material = new THREE.MeshBasicMaterial({color:color, side: THREE.DoubleSide});
+                const plane = new THREE.Mesh(geometry, material);
+                plane.position.x = x;
+                plane.position.y = y;
+                plane.position.z = z;
+                plane.width = width;
+                plane.height = height
+                plane.name = name;
+
+                var dTestVertex = `
+                varying vec3 vPos;
+                void main(){
+                    vPos = position;
+                    gl_Position =  vec4(position,1.0);
+                }`;
+                var dTestFragment = `
+                uniform float distance;
+                varying vec3 vPos;
+                void main(){
+                    float s = smoothstep(distance - 1., distance + 1., abs(vPos.z));
+                    vec3 res = mix(vec3(0., 1., 1.), vec3(1., 0., 0.), s);
+                    gl_FragColor = vec4(res, 1.0);
+                }`;
+                var x = new THREE.ShaderMaterial({
+                    uniforms:{
+                        distance:{value:100}
+                    },
+                    vertexShader: dTestVertex,
+                    fragmentShader: dTestFragment,
+                    depthTest: false
+                });
+                plane.material = x ;
+                //plane.rotation.x = 3.14 / 2.0;
+                return plane;
+            }
+
+        function createRendererCameraScene(canvas){
+            const renderer = new THREE.WebGLRenderer();
+            const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth/canvas.clientHeight, 1, 10000);
+            const scene = new THREE.Scene();
+            //NOVO: Determina a cor de fundo da cena
+            scene.background = new THREE.Color(0xa0a0a0);
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            canvas.appendChild(renderer.domElement);
+            return {renderer, camera, scene};
+        }
+        function main() {
+            const canvas = document.querySelector('#c');
+            const {renderer, camera, scene} = createRendererCameraScene(canvas);
+            const controls = new OrbitControls(camera, renderer.domElement);
+            camera.position.set(0,20, 100);
+            controls.update();
+            ///Carga dos objetos
+            const loader = new FBXLoader();
+            let cubo = undefined;
+            let plano = undefined;
+            let planoB = undefined;
+            let boneco = undefined;
+
+            const clock = new THREE.Clock();
+            let mixer = undefined 
+            let bonecoAnimation = undefined;
+            loader.load('./assets/untitled.fbx', 
+                (object)=>{//Após a carga, o objeto carregado estará aqui.
+                    //TODO: Carregar as animações.
+                    scene.add(object);
+                    planoB = createPlane(0,0,0, 0.5, 0.5, 0x888888, "planoB");
+                    scene.add(planoB);
+                    //Oculta o plano, mantém só o cubo visivel
+                    plano = object.children.filter((childObject)=>childObject.name=="Plano")[0];
+                    cubo = object.children.filter((childObject)=>childObject.name=="Cubo")[0];
+                    boneco = object.getObjectByName("boneco");
+                    planoB.visible = false;
+                    plano.visible = false;  
+                    boneco.visible = false;
+                    //Adiciona a luz
+                    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+			    	hemiLight.position.set( -500, 200, 0 );
+                    scene.add( hemiLight );
+                    mixer = new THREE.AnimationMixer(object);
+                    bonecoAnimation = mixer.clipAction(object.animations[0]);
+                }, 
+                (progress)=>{ //Lida com o progresso da carga
+                    const totalToLoad = progress.total;
+                    const loaded = progress.loaded;
+                    const loadPercentage = loaded / totalToLoad;
+                    console.log("TODO: Mostrar numa barra de progressos "+loadPercentage);
+                }, 
+                (error)=>{
+                    console.log(error)
+            });
+            const raycaster = new THREE.Raycaster();
+            canvas.addEventListener('click', (event)=>{
+                const pickPosition = mousePositionAsNormalizedCoordinates(event,renderer);
+                raycaster.setFromCamera(pickPosition, camera);
+                const interceptedObjects = raycaster.intersectObjects(scene.children, true);
+                if(interceptedObjects.filter((interceptionObj)=>interceptionObj.object.name=="Cubo").length > 0){
+                    //Exibe o plano, oculta o cubo
+                    plano.visible = true;
+                    planoB.visible = true;
+                    boneco.visible = true;
+                    cubo.visible = false;
+
+                    bonecoAnimation.play();
+                
+                    document.querySelector('#panel').style.visibility  = "visible";
+                    document.querySelector('#panel').style.top = event.clientY;
+                    document.querySelector('#panel').style.left = event.clientX;
+                }
+            });
+            canvas.addEventListener('mousemove', (event)=>{
+                const pickPosition = mousePositionAsNormalizedCoordinates(event,renderer);
+                if(document.querySelector('#panel').style.visibility == "visible"){
+                   // document.querySelector('#panel').style.top = event.clientY;
+                   // document.querySelector('#panel').style.left = event.clientX;
+                }
+            });
+            camera.position.set(0,150,300);
+            controls.update();
+
+            function animate(){
+                requestAnimationFrame(animate);
+                //plano.matrix = new THREE.Matrix4();
+                //TODO: Avançar animação
+                const delta = clock.getDelta();
+                if(mixer){
+                    mixer.update(delta);
+                }
+                controls.update()
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+        main();
+    </script>
+</html>
