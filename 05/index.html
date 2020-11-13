@@ -6,13 +6,18 @@
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 
 		<style>
-			body {
-				background-color: #000;
-				color: #444;
-			}
-			a {
-				color: #08f;
-			}
+            #container {
+                margin-top: 100px;
+                margin-bottom: 100px;
+                margin-right: 150px;
+                margin-left: 80px;
+                padding-top: 50px;
+                padding-right: 30px;
+                padding-bottom: 50px;
+                padding-left: 80px;
+                border-style: dotted dashed solid double;
+            }
+
 		</style>
 	</head>
 	<body>
@@ -86,9 +91,6 @@
 					}
 					geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
                 }
-                
-  
-        
                 let bonecoAnimation = undefined;
                 let cubo = undefined;
                 let plano = undefined;
@@ -99,8 +101,8 @@
                     plano = object.children.filter((childObject)=>childObject.name=="Plano")[0];
                     cubo = object.children.filter((childObject)=>childObject.name=="Cubo")[0];
                     boneco = object.getObjectByName("boneco");
-                    plano.visible = false;  
-                    cubo.visible = false;
+                    plano.visible = true;  
+                    cubo.visible = true;
                     mixer = new THREE.AnimationMixer(object);
                     bonecoAnimation = mixer.clipAction(object.animations[0]);
                     bonecoAnimation.play();
@@ -165,8 +167,8 @@
 				renderer.domElement.addEventListener( 'click', onMouseMove );
 			}
 			function onMouseMove( e ) {
-				mouse.x = e.clientX;
-                mouse.y = e.clientY;
+				mouse.x = e.offsetX;
+                mouse.y = e.offsetY;
                 pick()
 			}
 			function animate() {
@@ -186,8 +188,14 @@
                 // //create buffer for reading single pixel
                 const pixelBuffer = new Uint8Array( 4 );
                 renderer.readRenderTargetPixels( pickingTexture, 0, 0, 1, 1, pixelBuffer );
-                console.log(pixelBuffer)
+                // Reseta os materiais do objeto para os materiais originais dele.
                 changeMaterialToOriginalMaterial(scene);
+                console.log(pixelBuffer)//A cor, que é o id, está aqui na forma de RGBA. O A é sempre 255 e pode ser descartado pq o id é o integer feito das partes RGB
+                // Decodifica o pixel buffer pra obter o id
+                const id = ( pixelBuffer[ 0 ] << 16 ) | ( pixelBuffer[ 1 ] << 8 ) | ( pixelBuffer[ 2 ] );
+                //TODO: Pegar o objeto e fazer alguma sacanagem com ele
+                const result = scene.getObjectById(id);
+                console.log(result)
 				// //render the picking scene off-screen
 				// // set the view offset to represent just a single pixel under the mouse
 				// camera.setViewOffset( renderer.domElement.width, renderer.domElement.height, mouse.x * window.devicePixelRatio | 0, mouse.y * window.devicePixelRatio | 0, 1, 1 );
