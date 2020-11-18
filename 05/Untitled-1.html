@@ -1,0 +1,168 @@
+<html>
+    <head title="Carregando FBX">
+        <style>
+            svg {width: 100px;border-radius: 50%;background:yellowgreen; transform: rotate(-90deg);}
+            circle {fill: none;stroke-width: 32;r: 16;cx: 16;cy: 16;}
+            circle.first {stroke: deeppink;}
+            circle.second {stroke: #fb3;}
+            circle.third {stroke: black;}
+        </style>
+    </head>
+    <body>
+        <div>
+            <span> DIV 1</span>
+        </div>
+        <div style="display: flex; flex-direction: row;">
+            <div>
+                <span>bbbbb</span>
+            </div>
+            <div id="c" style="height:500px; width: 500px;border-style: dotted dashed solid double; "></div>
+            <div>
+                <span>aaaaaaa</span>
+            </div>
+        </div>
+        <div id="panel" style="position: absolute; width: 300px; height: 100px; visibility: hidden;">
+            <span>GRAFICO DA D3 VIRIA AQUI</span>
+            <svg viewBox="0 0 32 32">
+                <circle class='first' stroke-dasharray="75 100"></circle>
+                <circle class='second' stroke-dasharray="50 100"></circle>
+                <circle class='third' stroke-dasharray="24 100"></circle>
+              </svg>
+        </div>
+    </body>
+    <script src="mathUtils.js"></script>
+    <script src="loader.js"></script>
+    <script src="initialization.js"></script>
+    <script type="module">
+        //NOVO: Importando a three como módulo.
+        import * as THREE from "./build/three.module.js";
+        import {OrbitControls} from "./jsm/controls/OrbitControls.js"
+        import { FBXLoader } from './jsm/loaders/FBXLoader.js';
+
+
+        class PickHelper {
+            constructor() {
+                this.raycaster = new THREE.Raycaster();
+                this.pickedObject = null;
+                this.pickedObjectSavedColor = 0;
+            }
+            pick(normalizedPosition, scene, camera, time){
+                //Papagaiada do teste
+                if (this.pickedObject) {
+                    this.pickedObject.material.emissive.setHex(this.pickedObjectSavedColor);
+                    this.pickedObject = undefined;
+                }
+                //manda o raio.
+                this.raycaster.setFromCamera(normalizedPosition, camera);
+                const intersectedObjects = this.raycaster.intersectObjects(scene.children, true);
+                if(intersectedObjects.length){
+                    //Papagaiada do teste
+                    // pick the first object. It's the closest one
+                    this.pickedObject = intersectedObjects[0].object;
+                    // save its color
+                    this.pickedObjectSavedColor = this.pickedObject.material.emissive.getHex();
+                    // set its emissive color to flashing red/yellow
+                    this.pickedObject.material.emissive.setHex((time * 8) % 2 > 1 ? 0xFFFF00 : 0xFF0000);
+                }
+            }
+        }
+    
+        // let idCounter = 0;
+        // const setObjectAndChildrenIDs = (obj)=>{
+        //     obj.children.forEach(child=>{
+        //         idCounter = idCounter + 1;
+        //         child.id = idCounter;
+        //         setObjectAndChildrenIDs(child);
+        //     });
+        // };
+        const changeMaterialToIdMaterial = (obj)=>{
+            obj.children.forEach(child=>{
+                const id = child.id;
+                if(child.material){
+                    var material = new THREE.MeshBasicMaterial( { color: id } );
+                    if(child.material.skinning === true){
+                        material.skinning = true;
+                    }
+                    child.material = material;
+                }
+                changeMaterialToIdMaterial(child)
+            });
+        }
+        
+
+        function main() {
+            const element = document.querySelector('#c');
+            const {renderer, camera, scene, controls} = createRendererCameraAndScene(THREE,
+                OrbitControls, element);
+            //Cria o render target a ser usado no picking e a scene a ser usada
+            //no picking
+            const pickingRenderTarget = new THREE.WebGLRenderTarget(element.clientWidth, 
+                element.clientHeight);
+            const pickingScene = new THREE.Scene();
+            pickingScene.background = new THREE.Color('black');
+
+            createLight(THREE, scene);
+            const loader = new FBXLoader();
+            let cubo = undefined;
+            let plano = undefined;
+            let boneco = undefined;
+            const clock = new THREE.Clock();
+            let mixer = undefined 
+            let bonecoAnimation = undefined;
+            new MyLoader(THREE, FBXLoader, (object)=>{
+                changeMaterialToIdMaterial(object);
+                scene.add(object);
+                //Adiciona os objetos à cena auxiliar de picking
+                //pickingScene.add(object);
+                plano = object.children.filter((childObject)=>childObject.name=="Plano")[0];
+                cubo = object.children.filter((childObject)=>childObject.name=="Cubo")[0];
+                boneco = object.getObjectByName("boneco");
+                plano.visible = false;  
+                cubo.visible = false;
+                mixer = new THREE.AnimationMixer(object);
+                bonecoAnimation = mixer.clipAction(object.animations[0]);
+                bonecoAnimation.play();
+                
+            }, (progressPercentage)=>{console.log(progressPercentage)}).load('./assets/untitled.fbx')
+
+            const pickHelper = new PickHelper()
+            const raycaster = new THREE.Raycaster();
+
+            element.addEventListener('click', (event)=>{
+
+            });
+            let mX = -1;
+            let mY = -1;
+            element.addEventListener('mousemove', (event)=>{
+                mX = event.offsetX;
+                mY = event.offsetY;
+                // const ndc = calculateNDC(event);
+                // pickHelper.pick(ndc, scene, camera, 1000)
+                // console.log("ndc=",ndc.x,ndc.y)
+            });
+            camera.position.set(0,150,300);
+            controls.update();
+
+            function animate(){
+                requestAnimationFrame(animate);
+
+                const delta = clock.getDelta();
+                if(mixer){
+                    mixer.update(delta);
+                }
+                controls.update()
+                renderer.render(scene, camera);
+                //Renderiza a cena auxiliar
+                // renderer.setRenderTarget(pickingRenderTarget);
+                // renderer.render(pickingScene, camera);
+                // const pixelBuffer = new Uint8Array( 4 );
+                // renderer.readRenderTargetPixels(pickingRenderTarget, mX, mY, 1,1, pixelBuffer);
+                // //console.log("pixelbuffer", pixelBuffer);
+                // renderer.setRenderTarget(null);
+                
+            }
+            animate();
+        }
+        main();
+    </script>
+</html>

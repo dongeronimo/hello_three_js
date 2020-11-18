@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - interactive cubes (gpu)</title>
+		<meta charset="utf-8">
+		
+
+	</head>
+	<body>
+
+        <div id="container" style="width: 500px; height: 500px;" ></div>
+        <script src="loader.js"></script>
+        <script src="imagePicker.js"></script>
+		<script type="module">
+			import * as THREE from '../build/three.module.js';
+            import { FBXLoader } from './jsm/loaders/FBXLoader.js';
+			import { TrackballControls } from './jsm/controls/TrackballControls.js';
+
+            //Percorre recursivamente a arvore de objetos. Em cada objeto cria um material cuja cor é o id do objeto, guarda
+            //o material anterior do objeto (em oldMaterial) e atribui o material do id ao material do objeto.
+            const changeMaterialToIdMaterial = (obj)=>{
+                obj.children.forEach(child=>{
+                    const id = child.id;
+                    const oldMaterial = child.material;
+                    if(oldMaterial){//Existem objs sem material como os bones que controlam os bonecos, luzes, etc.. não há pq mexer neles pq eles não são clicáveis
+                        child.oldMaterial = oldMaterial
+                        var idMaterial = new THREE.MeshBasicMaterial( { color: id } );
+                        if(oldMaterial.skinning === true){
+                            idMaterial.skinning = true;
+                        }
+                        child.material = idMaterial;
+                    }
+                    changeMaterialToIdMaterial(child)
+                });
+            }
+            const changeMaterialToOriginalMaterial = (obj)=>{
+                obj.children.forEach(child=>{
+                    if(child.material){
+                        child.material = child.oldMaterial;
+                    }
+                    changeMaterialToOriginalMaterial(child);
+                });
+            }
+
+
+			let container;
+			let camera, controls, scene, renderer;
+			let pickingTexture, pickingScene;
+			let highlightBox;
+			const pickingData = [];
+			const mouse = new THREE.Vector2();
+
+            const clock = new THREE.Clock();
+            let mixer = undefined 
+			init();
+			animate();
+			function init() {
+                
+				container = document.getElementById( "container" );
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 1000;
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0x000000 );
+
+				pickingTexture = new THREE.WebGLRenderTarget( 1, 1 );
+				scene.add( new THREE.AmbientLight( 0x555555 ) );
+				const light = new THREE.SpotLight( 0xffffff, 1.5 );
+				light.position.set( 0, 500, 2000 );
+				scene.add( light );
+				const pickingMaterial = new THREE.MeshBasicMaterial( { vertexColors: true } );
+				const defaultMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true, vertexColors: true, shininess: 0	} );
+				function applyVertexColors( geometry, color ) {
+					const position = geometry.attributes.position;
+					const colors = [];
+					for ( let i = 0; i < position.count; i ++ ) {
+						colors.push( color.r, color.g, color.b );
+					}
+					geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+                }
+                let bonecoAnimation = undefined;
+                let cubo = undefined;
+                let plano = undefined;
+                let boneco = undefined;
+                new MyLoader(THREE, FBXLoader, (object)=>{
+                    //Adiciona à cena que é renderizada
+                    scene.add(object);
+                    plano = object.children.filter((childObject)=>childObject.name=="Plano")[0];
+                    cubo = object.children.filter((childObject)=>childObject.name=="Cubo")[0];
+                    boneco = object.getObjectByName("boneco");
+                    plano.visible = true;  
+                    cubo.visible = true;
+                    mixer = new THREE.AnimationMixer(object);
+                    bonecoAnimation = mixer.clipAction(object.animations[0]);
+                    bonecoAnimation.play();
+                    //Adiciona à cena de picking
+                }, (progressPercentage)=>{console.log(progressPercentage)}).load('./assets/untitled.fbx')
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setSize( container.innerWidth, container.innerHeight );
+				container.appendChild( renderer.domElement );
+				controls = new TrackballControls( camera, renderer.domElement );
+				controls.rotateSpeed = 1.0;
+				controls.zoomSpeed = 1.2;
+				controls.panSpeed = 0.8;
+				controls.noZoom = false;
+				controls.noPan = false;
+				controls.staticMoving = true;
+				controls.dynamicDampingFactor = 0.3;
+				renderer.domElement.addEventListener( 'click', onMouseMove );
+			}
+			function onMouseMove( e ) {
+				mouse.x = e.offsetX;
+                mouse.y = e.offsetY;
+                pick()
+			}
+			function animate() {
+				requestAnimationFrame( animate );
+				render();
+            }
+            const imagePicker = new ImagePicker(THREE);
+			function pick() {
+                const result = imagePicker.pick(renderer, camera, scene, mouse.x, mouse.y);
+                console.log(result);
+            }
+            
+			function render() {
+				controls.update();
+                //pick();
+                const delta = clock.getDelta();
+                if(mixer){
+                    mixer.update(delta);
+                }
+				renderer.render( scene, camera );
+			}
+		</script>
+	</body>
+</html>
+
